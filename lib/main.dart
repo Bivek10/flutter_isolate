@@ -4,7 +4,8 @@ import 'package:flutter_isolate/model/album_reponse_model.dart';
 import 'core/services/app_repository/album_repo.dart';
 import 'core/services/app_services/ablum_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -35,7 +36,7 @@ class _HomePageState extends State<HomePage> {
   AlbumRepo? albumRepo;
   @override
   void initState() {
-    albumRepo = LocalAlbum();
+    albumRepo = LocalAlbumService();
     super.initState();
   }
 
@@ -46,7 +47,7 @@ class _HomePageState extends State<HomePage> {
         title: const Text("Isolate Testing"),
       ),
       body: FutureBuilder<List<AlbumResponse>>(
-          future: albumRepo!.getAlbum(),
+          future: albumRepo!.runIsolate(),
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return ListView.builder(
