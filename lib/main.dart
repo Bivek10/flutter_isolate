@@ -36,7 +36,9 @@ class _HomePageState extends State<HomePage> {
   AlbumRepo? albumRepo;
   @override
   void initState() {
-    albumRepo = LocalAlbumService();
+    albumRepo = LocalAlbum();
+    CustomIsolate customIsolate = CustomIsolate();
+    customIsolate.getAlbum();
     super.initState();
   }
 
