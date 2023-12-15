@@ -1,9 +1,15 @@
+import 'dart:io';
+import 'dart:isolate';
+
 import 'package:dartz/dartz.dart' show Either;
 import 'package:flutter/material.dart';
 import 'package:flutter_isolate/core/services/app_services/video_services.dart';
 import 'package:flutter_isolate/core/utils/movie_downloader.dart';
 import 'package:flutter_isolate/model/video_model.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +75,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                     itemCount: videos.length,
                     itemBuilder: (BuildContext ctx, index) {
+                      MovieDownloaderIsolate movieDownloaderIsolate =
+                          MovieDownloaderIsolate();
                       return Container(
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
@@ -82,28 +90,50 @@ class _HomePageState extends State<HomePage> {
                                   videos[index].thumb!,
                                 ),
                                 Positioned(
-                                  top: 10,
+                                  bottom: 0,
                                   right: 0,
                                   child: IconButton(
                                     onPressed: () async {
-                                      Permission permission =
-                                          Permission.manageExternalStorage;
-                                      PermissionStatus permissionStatus =
-                                          await permission.request();
-                                      if (permissionStatus.isGranted) {
-                                        MovieDownloaderIsolate
-                                            movieDownloaderIsolate =
-                                            MovieDownloaderIsolate();
-                                        movieDownloaderIsolate.downloadFile(
-                                            fileUrl:
-                                                videos[index].sources!.first);
-                                      }
+                                      // Permission permission =
+                                      //     Permission.manageExternalStorage;
+                                      // PermissionStatus permissionStatus =
+                                      //     await permission.request();
+                                      // print(
+                                      //     "permission ${permissionStatus.isGranted}");
+
+                                      movieDownloaderIsolate.downloadFile(
+                                        fileUrl: videos[index].sources!.first,
+                                      );
                                     },
-                                    icon: const Icon(
-                                      Icons.download,
-                                      size: 20,
-                                      color: Colors.white,
-                                    ),
+                                    icon: StreamBuilder<double>(
+                                        stream: movieDownloaderIsolate
+                                            .downloadPercentageController
+                                            .stream,
+                                        builder: (context, snapshot) {
+                                          if (snapshot.hasData) {
+                                            return Center(
+                                              child: SizedBox(
+                                                width: 100,
+                                                height: 100,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  backgroundColor: Colors.white,
+                                                  strokeWidth: 5,
+                                                  value: snapshot.data,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return const CircleAvatar(
+                                            backgroundColor: Colors.white,
+                                            radius: 20,
+                                            child: Icon(
+                                              Icons.download,
+                                              size: 20,
+                                              color: Colors.blue,
+                                            ),
+                                          );
+                                        }),
                                   ),
                                 ),
                               ],
@@ -135,3 +165,57 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+// Future<void> downloadFile(
+//     {required String fileUrl,
+//     required MovieDownloaderIsolate movieDownloaderIsolate}) async {
+//   //get app directory to saved video.
+
+//   final Directory? directory = await getExternalStorageDirectory();
+//   var videoSaveDir = await Directory(directory!.path).create();
+//   ReceivePort rp = ReceivePort();
+//   final downloaderIsolate = await Isolate.spawn(
+//       movieDownloaderIsolate.transferFileDownloadRate, rp.sendPort);
+
+//   final boardCastRp = rp.asBroadcastStream();
+//   // received the send port.
+//   final SendPort transferFileSendPort = await boardCastRp.first;
+//   //send the download url to transferFileDownload
+//   transferFileSendPort.send(fileUrl);
+//   int currentPosition = 0;
+//   num cumulative = 0;
+
+//   RandomAccessFile file =
+//       await File(path.join(videoSaveDir.path, path.basename(fileUrl)))
+//           .open(mode: FileMode.write);
+
+//   boardCastRp.listen((event) async {
+//     if (event is Map) {
+//       if (event.keys.contains("byte_in_chunck") && event.keys.isNotEmpty) {
+//         try {
+//           List<int> chunckBytes = event["byte_in_chunck"];
+//           int startByte = currentPosition;
+//           int endByte = currentPosition + chunckBytes.length;
+//           currentPosition = endByte;
+//           cumulative += event["cumulative"];
+
+//           movieDownloaderIsolate.downloadPercentageController.sink
+//               .add((cumulative / event["total"]) * 100);
+
+//           file.setPositionSync(startByte);
+//           file.writeFromSync(event["byte_in_chunck"]);
+//         } catch (e) {
+//           print("error $e");
+//         }
+//       } else {
+//         if (event["download_status"] == "completed") {
+//           await file.close();
+//           movieDownloaderIsolate.downloadPercentageController.close();
+//           rp.close();
+//           // killing the isolate once file is downloaded.
+//           downloaderIsolate.kill();
+//         }
+//       }
+//     }
+//   });
+// }
