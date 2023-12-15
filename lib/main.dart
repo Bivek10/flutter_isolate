@@ -92,49 +92,75 @@ class _HomePageState extends State<HomePage> {
                                 Positioned(
                                   bottom: 0,
                                   right: 0,
-                                  child: IconButton(
-                                    onPressed: () async {
-                                      // Permission permission =
-                                      //     Permission.manageExternalStorage;
-                                      // PermissionStatus permissionStatus =
-                                      //     await permission.request();
-                                      // print(
-                                      //     "permission ${permissionStatus.isGranted}");
-
-                                      movieDownloaderIsolate.downloadFile(
-                                        fileUrl: videos[index].sources!.first,
-                                      );
-                                    },
-                                    icon: StreamBuilder<double>(
-                                        stream: movieDownloaderIsolate
-                                            .downloadPercentageController
-                                            .stream,
-                                        builder: (context, snapshot) {
-                                          if (snapshot.hasData) {
-                                            return Center(
-                                              child: SizedBox(
-                                                width: 100,
-                                                height: 100,
-                                                child:
-                                                    CircularProgressIndicator(
+                                  child: StreamBuilder<double>(
+                                      stream: movieDownloaderIsolate
+                                          .downloadPercentageController.stream,
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Stack(
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 15,
                                                   backgroundColor: Colors.white,
-                                                  strokeWidth: 5,
-                                                  value: snapshot.data,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    backgroundColor:
+                                                        Colors.white,
+                                                    strokeWidth: 5,
+                                                    value: snapshot.data,
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                          }
-                                          return const CircleAvatar(
-                                            backgroundColor: Colors.white,
-                                            radius: 20,
-                                            child: Icon(
-                                              Icons.download,
-                                              size: 20,
-                                              color: Colors.blue,
+                                                Positioned(
+                                                  top: 5,
+                                                  left: 5,
+                                                  child: snapshot.data == 1
+                                                      ? const Icon(
+                                                          Icons.check,
+                                                          size: 20,
+                                                        )
+                                                      : const Icon(
+                                                          Icons.pause,
+                                                          size: 20,
+                                                        ),
+                                                ),
+                                              ],
                                             ),
                                           );
-                                        }),
-                                  ),
+                                        }
+
+                                        return IconButton(
+                                          onPressed: () async {
+                                            // Permission permission =
+                                            //     Permission.manageExternalStorage;
+                                            // PermissionStatus permissionStatus =
+                                            //     await permission.request();
+                                            // print(
+                                            //     "permission ${permissionStatus.isGranted}");
+
+                                            movieDownloaderIsolate.downloadFile(
+                                              fileUrl:
+                                                  videos[index].sources!.first,
+                                            );
+                                          },
+                                          icon: StreamBuilder<double>(
+                                              stream: movieDownloaderIsolate
+                                                  .downloadPercentageController
+                                                  .stream,
+                                              builder: (context, snapshot) {
+                                                return const CircleAvatar(
+                                                  backgroundColor: Colors.white,
+                                                  radius: 20,
+                                                  child: Icon(
+                                                    Icons.download,
+                                                    size: 20,
+                                                    color: Colors.blue,
+                                                  ),
+                                                );
+                                              }),
+                                        );
+                                      }),
                                 ),
                               ],
                             ),
