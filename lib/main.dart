@@ -41,12 +41,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   VideoServices videoServices = VideoServices();
-  // MoviesModel? moviesData;
-  // VideoServices videoServices = VideoServices();
-  // getVideos() async {
-  //   final data = await videoServices.getMovies();
-  //   data.fold((movies) => moviesData = movies, (exception) => throw exception);
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -59,13 +53,8 @@ class _HomePageState extends State<HomePage> {
         child: FutureBuilder<Either<MoviesModel, Exception>>(
           future: videoServices.getMovies(),
           builder: (context, state) {
-            print(state.hasError);
-            print(state.hasData);
-
             if (state.hasError) {
-              return Container(
-                child: Text("Error"),
-              );
+              return const Text("Error");
             } else if (state.hasData) {
               return state.data!.fold(
                 (movieData) {
@@ -101,7 +90,6 @@ class _HomePageState extends State<HomePage> {
                                           Permission.manageExternalStorage;
                                       PermissionStatus permissionStatus =
                                           await permission.request();
-                                      print(await permission.isGranted);
                                       if (permissionStatus.isGranted) {
                                         MovieDownloaderIsolate
                                             movieDownloaderIsolate =
@@ -109,11 +97,6 @@ class _HomePageState extends State<HomePage> {
                                         movieDownloaderIsolate.downloadFile(
                                             fileUrl:
                                                 videos[index].sources!.first);
-                                        // VideoDownloadService vs =
-                                        //     VideoDownloadService();
-                                        // String file = await vs.downloadFile(
-                                        //     videos[index].sources!.first);
-                                        // print("File path ${file}");
                                       }
                                     },
                                     icon: const Icon(
@@ -141,15 +124,11 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
                 (exception) {
-                  return Container(
-                    child: Text("Error====>, ${exception}"),
-                  );
+                  return Text("Error====>, $exception");
                 },
               );
             }
-            return Container(
-              child: Text("Loading"),
-            );
+            return const Text("Loading");
           },
         ),
       ),
