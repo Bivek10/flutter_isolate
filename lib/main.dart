@@ -1,11 +1,13 @@
+import 'package:dartz/dartz.dart' show Either;
 import 'package:flutter/material.dart';
-import 'package:flutter_isolate/model/album_reponse_model.dart';
-
-import 'core/services/app_repository/album_repo.dart';
-import 'core/services/app_services/ablum_service.dart';
+import 'package:flutter_isolate/core/services/app_services/video_services.dart';
+import 'package:flutter_isolate/core/utils/movie_downloader.dart';
+import 'package:flutter_isolate/model/video_model.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
@@ -33,40 +35,124 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  AlbumRepo? albumRepo;
   @override
   void initState() {
-    albumRepo = LocalAlbum();
-    CustomIsolate customIsolate = CustomIsolate();
-    customIsolate.getAlbum();
     super.initState();
   }
+
+  VideoServices videoServices = VideoServices();
+  // MoviesModel? moviesData;
+  // VideoServices videoServices = VideoServices();
+  // getVideos() async {
+  //   final data = await videoServices.getMovies();
+  //   data.fold((movies) => moviesData = movies, (exception) => throw exception);
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Isolate Testing"),
+        title: const Text("Video Downloder App"),
       ),
-      body: FutureBuilder<List<AlbumResponse>>(
-          future: albumRepo!.runIsolate(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    AlbumResponse item = snapshot.data![index];
-                    return Column(
-                      key: Key(item.id.toString()),
-                      children: [
-                        Image.network(item.thumbnailUrl!),
-                        Text(item.title!),
-                      ],
-                    );
-                  });
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FutureBuilder<Either<MoviesModel, Exception>>(
+          future: videoServices.getMovies(),
+          builder: (context, state) {
+            print(state.hasError);
+            print(state.hasData);
+
+            if (state.hasError) {
+              return Container(
+                child: Text("Error"),
+              );
+            } else if (state.hasData) {
+              return state.data!.fold(
+                (movieData) {
+                  List<Videos> videos = movieData.categories![0].videos!;
+                  return GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 200,
+                      childAspectRatio: 2.1 / 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemCount: videos.length,
+                    itemBuilder: (BuildContext ctx, index) {
+                      return Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Column(
+                          children: [
+                            Stack(
+                              children: [
+                                Image.network(
+                                  videos[index].thumb!,
+                                ),
+                                Positioned(
+                                  top: 10,
+                                  right: 0,
+                                  child: IconButton(
+                                    onPressed: () async {
+                                      Permission permission =
+                                          Permission.manageExternalStorage;
+                                      PermissionStatus permissionStatus =
+                                          await permission.request();
+                                      print(await permission.isGranted);
+                                      if (permissionStatus.isGranted) {
+                                        MovieDownloaderIsolate
+                                            movieDownloaderIsolate =
+                                            MovieDownloaderIsolate();
+                                        movieDownloaderIsolate.downloadFile(
+                                            fileUrl:
+                                                videos[index].sources!.first);
+                                        // VideoDownloadService vs =
+                                        //     VideoDownloadService();
+                                        // String file = await vs.downloadFile(
+                                        //     videos[index].sources!.first);
+                                        // print("File path ${file}");
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.download,
+                                      size: 20,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              videos[index].title!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                (exception) {
+                  return Container(
+                    child: Text("Error====>, ${exception}"),
+                  );
+                },
+              );
             }
-            return const Center(child: CircularProgressIndicator());
-          }),
+            return Container(
+              child: Text("Loading"),
+            );
+          },
+        ),
+      ),
     );
   }
 }
