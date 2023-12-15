@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:isolate';
 
-import '../../model/album_reponse_model.dart';
 import 'package:http/http.dart' as http;
+
+import '../../model/album_reponse_model.dart';
 
 class IsolateWorker {
   static const _baseUrl = 'https://jsonplaceholder.typicode.com/albums';
@@ -97,15 +97,17 @@ class IsolateWorker {
 
   static Future<AlbumResponse> _getAlbum(http.Client client, int id) async {
     var storyUrl = '$_baseUrl/$id/photos';
+    AlbumResponse? results;
     try {
       var storyRes = await client.get(Uri.parse(storyUrl));
       if (storyRes.statusCode == 200) {
-        return AlbumResponse.fromJson(storyRes.body as Map<String, dynamic>);
+        results = AlbumResponse.fromJson(storyRes.body as Map<String, dynamic>);
       } else {
         throw "error on fetching album";
       }
     } catch (e) {
       print(e);
     }
+    return results!;
   }
 }
